@@ -47,7 +47,7 @@ Para obtener el token de tu bot, utiliza [BotFather](https://t.me/botfather) en 
 1. Ejecutar el bot:
 
 ```bash
-python main.py
+python itebot.py
 ```
 
 2. Iniciar una conversación en Telegram usando el comando `/start`.
