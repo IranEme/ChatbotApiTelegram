@@ -1,14 +1,15 @@
 import os
 import logging
+import sqlite3
 from telegram import Update
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, filters, 
     ConversationHandler, ContextTypes
 )
 
-# ID de chat y token del bot (⚠️ NO COMPARTAS ESTO PÚBLICAMENTE)
+# ID de chat y token del bot 
 BOT_TOKEN = "8148820292:AAEUw51nAxTCkQc6HBU_pFPWpdvMUPevEKo"
-YOUR_CHAT_ID = 5666918269  # Cambia esto por tu chat ID
+YOUR_CHAT_ID = 5666918269  
 
 # Configurar logs
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -33,6 +34,19 @@ def contiene_palabra_prohibida(texto):
     palabras_prohibidas = cargar_palabras_prohibidas()
     palabras_mensaje = set(texto.lower().split())
     return any(palabra in palabras_prohibidas for palabra in palabras_mensaje)
+
+# Función para obtener la respuesta de la base de datos
+def obtener_respuesta(palabra):
+    try:
+        conn = sqlite3.connect("bot_data.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT respuesta FROM palabras_clave WHERE palabra = ?", (palabra,))
+        respuesta = cursor.fetchone()
+        conn.close()
+        return respuesta[0] if respuesta else None
+    except sqlite3.Error as e:
+        logger.error(f"Error en la base de datos: {e}")
+        return None
 
 # Función de inicio
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -104,7 +118,13 @@ async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = update.message.text
     print(f"Mensaje recibido: {texto}")
-    if contiene_palabra_prohibida(texto):
+    
+    # Consultar la base de datos para una respuesta asociada a la palabra
+    respuesta = obtener_respuesta(texto)
+    
+    if respuesta:
+        await update.message.reply_text(respuesta)
+    elif contiene_palabra_prohibida(texto):
         await update.message.reply_text("⚠️ Tu mensaje contiene palabras no permitidas.")
     else:
         await update.message.reply_text(f"Recibí tu mensaje: {texto}")
